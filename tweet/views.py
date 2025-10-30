@@ -1,5 +1,6 @@
 from django.shortcuts import render
 from .models import Tweet
+from django.db.models import Q
 from .forms import TweetForm, UserRegistrationForm
 from django.shortcuts import get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
@@ -13,7 +14,13 @@ def index(request):
 
 def tweet_list(request):
     tweets = Tweet.objects.all().order_by('-created')
-    return render(request, 'tweet/tweet_list.html', context={'tweets': tweets})
+    query = request.GET.get("q", "").strip()
+    if query:
+        tweets = tweets.filter(
+            Q(text__icontains=query) |
+            Q(user__username__icontains=query)
+        ).distinct()
+    return render(request, 'tweet/tweet_list.html', context={'tweets': tweets, "query": query})
 
 
 @login_required
